@@ -1,0 +1,50 @@
+---
+- name: Launch EC2 and assign Route 53 DNS
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    region: us-east-1
+    ami_id: ami-09c813fb71547fc4f  # Example: Amazon Linux 2
+    instance_type: t2.micro
+    subnet_id: subnet-0f15782134914e097      # Replace with your subnet
+    security_group_id: sg-0354f0db2462dba79  # Replace with your security group
+    instance_name: mysql
+    domain_name: mysql.neeharika.site   # Desired DNS name
+    hosted_zone_id: Z0518612VBHB4F66CCWX  # Replace with your Route 53 Hosted Zone ID
+
+  tasks:
+
+    - name: Launch EC2 instance
+      amazon.aws.ec2_instance:
+        name: "{{ instance_name }}"
+        region: "{{ region }}"
+        image_id: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        count: 1
+        wait: true
+        assign_public_ip: true
+        vpc_subnet_id: "{{ subnet_id }}"
+        security_group: "{{ security_group_id }}"
+        tags:
+          Name: "{{ instance_name }}"
+      register: ec2_result
+
+    - name: Set public IP fact
+      set_fact:
+        public_ip: "{{ ec2_result.instances[0].public_ip_address }}"
+
+    - name: Create Route 53 A record
+      amazon.aws.route53:
+        state: present
+        zone: "{{ hosted_zone_id }}"
+        record: "{{ domain_name }}"
+        type: A
+        ttl: 2
+        value: "{{ public_ip }}"
+        overwrite: true
+
+    - name: Show assigned DNS
+      debug:
+        msg: "Instance {{ instance_name }} is now accessible at http://{{ domain_name }} ({{ public_ip }})"
