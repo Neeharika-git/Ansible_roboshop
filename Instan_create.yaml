@@ -1,0 +1,51 @@
+---
+- name: Launch EC2 and register Route 53 record
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    region: us-east-1
+    ami_id: ami-09c813fb71547fc4f  # Amazon Linux 2
+    instance_type: t2.micro
+    subnet_id: subnet-0f15782134914e097       # Your subnet
+    security_group_id: sg-0354f0db2462dba79   # Your security group
+    instance_name: catalogue
+    domain_name: ec2.neeharika.site     # Full domain you want to assign
+    hosted_zone_id: Z0518612VBHB4F66CCWX # Your Route 53 hosted zone ID
+
+  tasks:
+    - name: Launch EC2 instance without key pair
+      amazon.aws.ec2_instance:
+        name: "{{ instance_name }}"
+        region: "{{ region }}"
+        image_id: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        count: 1
+        wait: true
+        key_name: ""  # No key pair
+        assign_public_ip: true
+        vpc_subnet_id: "{{ subnet_id }}"
+        security_group: "{{ security_group_id }}"
+        tags:
+          Name: "{{ instance_name }}"
+          Environment: Production
+      register: ec2_result
+
+    - name: Set fact for public IP
+      set_fact:
+        public_ip: "{{ ec2_result.instances[0].public_ip_address }}"
+
+    - name: Create Route 53 DNS record for the EC2 instance
+      amazon.aws.route53:
+        state: present
+        zone: "{{ hosted_zone_id }}"
+        record: "{{ domain_name }}"
+        type: A
+        ttl: 300
+        value: "{{ public_ip }}"
+        overwrite: true
+
+    - name: Output instance and DNS info
+      debug:
+        msg: "Instance {{ instance_name }} is accessible at http://{{ domain_name }} (IP: {{ public_ip }})"
