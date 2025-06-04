@@ -1,0 +1,49 @@
+---
+- name: Launch EC2 and register Route 53 DNS
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    region: us-east-1
+    ami_id: ami-09c813fb71547fc4f
+    instance_type: t2.micro
+    subnet_id: subnet-0f15782134914e097       # Subnet with auto-assign public IP enabled
+    security_group_id: sg-0354f0db2462dba79
+    instance_name: mysql
+    domain_name: mysql.example.com
+    hosted_zone_id: Z0518612VBHB4F66CCWX
+
+  tasks:
+
+    - name: Launch EC2 instance (public IP from subnet settings)
+      amazon.aws.ec2_instance:
+        name: "{{ instance_name }}"
+        region: "{{ region }}"
+        image_id: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        count: 1
+        wait: true
+        vpc_subnet_id: "{{ subnet_id }}"
+        security_group: "{{ security_group_id }}"
+        tags:
+          Name: "{{ instance_name }}"
+      register: ec2_result
+
+    - name: Set public IP fact
+      set_fact:
+        public_ip: "{{ ec2_result.instances[0].public_ip_address }}"
+
+    - name: Create Route 53 A record
+      amazon.aws.route53:
+        state: present
+        zone: "{{ hosted_zone_id }}"
+        record: "{{ domain_name }}"
+        type: A
+        ttl: 5
+        value: "{{ public_ip }}"
+        overwrite: true
+
+    - name: Output DNS record
+      debug:
+        msg: "Created DNS: http://{{ domain_name }} → {{ public_ip }}"
