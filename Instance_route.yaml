@@ -49,4 +49,4 @@
 
     - name: Show assigned DNS
       debug:
-        msg: "Instance {{ instance_name }} is now accessible at http://{{ domain_name }} ({{ public_ip }})"
+        msg: "DNS {{ domain_name }} points to {{ public_ip }}"
