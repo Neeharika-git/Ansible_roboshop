@@ -1,3 +1,4 @@
+---
 - name: Launch EC2 instance without key pair
   hosts: localhost
   connection: local
@@ -13,22 +14,22 @@
     instance_count: 1
 
   tasks:
-  - name: Launch EC2 instance without key pair
-    amazon.aws.ec2_instance:
-      name: "{{ instance_name }}"
-      region: "{{ region }}"
-      image_id: "{{ ami_id }}"
-      instance_type: "{{ instance_type }}"
-      count: "{{ instance_count }}"
-      wait: true
-      key_name: ""  # No key pair
-      vpc_subnet_id: "{{ subnet_id }}"
-      security_group: "{{ security_group_id }}"
-      tags:
-         Name: "{{ instance_name }}"
-         CreatedBy: Ansible
-    register: ec2_result
+    - name: Launch EC2 instance without key pair
+      amazon.aws.ec2_instance:
+        name: "{{ instance_name }}"
+        region: "{{ region }}"
+        image_id: "{{ ami_id }}"
+        instance_type: "{{ instance_type }}"
+        count: "{{ instance_count }}"
+        wait: true
+        key_name: ""  # No key pair
+        vpc_subnet_id: "{{ subnet_id }}"
+        security_group: "{{ security_group_id }}"
+        tags:
+          Name: "{{ instance_name }}"
+          CreatedBy: Ansible
+      register: ec2_result
 
-  - name: Show EC2 instance info
-    debug:
-      var: ec2_result.instances
+    - name: Show EC2 instance info
+      debug:
+        var: ec2_result.instances
