@@ -9,7 +9,7 @@
     instance_type: t2.micro
     subnet_id: subnet-0f15782134914e097      # Replace with your subnet ID
     security_group_id: sg-0354f0db2462dba79  # Replace with your security group ID
-    instance_name: my-ec2-instance
+    instance_name: catalogue
     instance_count: 1
 
   tasks:
@@ -27,7 +27,7 @@
       tags:
          Name: "{{ instance_name }}"
          CreatedBy: Ansible
-      register: ec2_result
+    register: ec2_result
 
   - name: Show EC2 instance info
     debug:
